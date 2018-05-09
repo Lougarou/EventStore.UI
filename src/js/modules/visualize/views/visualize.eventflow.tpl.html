@@ -1,0 +1,213 @@
+<style>
+
+	.node {
+	  cursor: pointer;
+	}
+
+	.node circle {
+	  fill: #fff;
+	  stroke: #2E9625;
+	  stroke-width: 1.5px;
+	}
+
+	.node text {
+	  font: 14px sans-serif;
+	}
+
+	.link {
+	  fill: none;
+	  stroke: #ccc;
+	  stroke-width: 1.5px;
+	}
+
+	.arrow{
+		stroke-width:8;
+		stroke:#000;
+	}
+
+	.tree_path{
+		font-size: 20px;
+		font-weight: bold;
+		margin-top: 10px;
+		margin-bottom: 10px;
+		padding: 6px 20px 6px 20px;
+	}
+
+	.tree_path_separator{
+		width: 40px;
+		float: left;
+		font-weight: bold;
+		text-align: center;
+	}
+
+	#canvas{
+		width: 100%;
+		height: 600px;
+	}
+
+	.input_controls{
+		width: 400px;
+		float: left;
+	}
+
+	.input_controls div{
+		margin-bottom: 10px;
+	}
+
+	.input_controls label{
+		width: 140px;
+	}
+
+	.tips{
+		float:right;
+		width: 400px;
+	}
+
+	.tips ul{
+		margin: 0;
+		padding: 0;
+	}
+
+	.event-details{
+		width: 350px;
+		float: left;
+	}
+
+	.event-data{
+		float: left;
+		width: 350px;
+	}
+
+	.event-data pre{
+		background: #FCFCCF;
+		height: 130px;
+		overflow:scroll;
+	}
+
+	.edge-label{
+		font-size: 10px;
+	}
+	.node-timestamp{
+		font-size: 10px !important;
+	}
+
+	.node-name{
+		font-size: 13px !important;
+	}
+
+	.xaxis line{
+	stroke: #2E9625;
+	stroke-width: 1px;
+	}
+
+	.xaxis path{
+	stroke: #2E9625;
+	stroke-width: 1px;
+	}
+
+	.xaxis text{
+	fill:black;
+	}
+
+	.projection-status-Running{
+		color: green
+	}
+
+	.projection-status-Stopped{
+		color: red
+	}
+
+	.visualize-form-table{
+		border: 0;
+	}
+
+	.visualize-form-table tbody td {
+		border: 0;
+	}
+</style>
+<header>
+</header>
+
+<div class="input_controls">
+	<h2>Event Flow Visualization</h2>
+	<form>
+		<table border="0" class="visualize-form-table">
+		<tr>
+			<td>
+				<label for="correlation_id_prop">Correlation ID property:</label>
+			</td>
+			<td>
+				<input class="input_control" id="correlation_id_property" type="text" ng-model="correlationIdProperty" disabled="true">
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<label for="caused_by_prop">Caused By property:</label>
+			</td>
+			<td>
+				<input class="input_control" id="caused_by_property" type="text" ng-model="causedByProperty">
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<label for="correlation_id">Correlation ID:</label>
+			</td>
+			<td>
+				<input class="input_control" id="correlation_id" type="text" ng-model="correlationId">
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<input type="submit" ng-click="go()" value="Let's go!">
+			</td>
+		</tr>
+		</table>
+	</form>
+</div>
+
+<div class="event-details" ng-if="selectedEvent">
+	<h2>Event Details</h2>
+	<div>
+		<div><strong>Type:</strong> {{selectedEvent.eventType}}</div>
+		<div><strong>Timestamp:</strong> {{selectedEvent.updated}}</div>
+		<div><strong>Event ID:</strong> {{selectedEvent.eventId}}</div>
+		<div><strong>Link:</strong> <a  target="_blank" href="{{selectedEvent.id}}">{{selectedEvent.id}}</a></div>
+	</div>
+</div>
+
+<div class="event-data" ng-if="selectedEvent">
+	<h2>Event Data</h2>
+	<pre>{{selectedEvent.data}}</pre>
+</div>
+
+<div class="tips">
+	<h2>Some tips to get started</h2>
+	<ul>
+		<li>Make sure that the <strong>$by_correlation_id</strong> projection is running.<br/><strong>Current status: <span class="projection-status-{{projectionStatus}}">{{projectionStatus}}</span> <button ng-if="projectionStatus=='Stopped'" ng-click="startProjection()">Start</button></strong></li>
+		<li>Enter the <strong>Correlation ID</strong> of the event flow you want to visualize</li>
+		<li>Click on green events <svg height="12" width="12"><circle cx="6" cy="6" r="5" fill="#2E9625" /></svg> to expand</li>
+		<li>Hover on events to see the event details</li>
+		<li>Hold your click on any event for 2 seconds make it the root node</li>
+	</ul>
+</div>
+
+<div style="clear:both"></div>
+
+<div class="tree_path">
+	<span ng-repeat="node in tree.path">
+		<div class="tree_path_separator" ng-if="$index > 0"> > </div>
+		<div style="float: left;" ng-click="tree.makeRootNode(node)"><a href="javascript:;">{{ node.name }}</a></div>
+	</span>
+	<div style="clear:both"></div>
+</div>
+
+<div class="tree_controls">
+	<button ng-disabled="collapsingNodes" ng-click="tree.collapseAll()">Collapse all</button>
+	<button ng-disabled="collapsingNodes" ng-click="tree.expandAll()">Expand all</button>
+	<button ng-disabled="collapsingNodes" ng-click="tree.smartCollapse()">Smart Collapse</button>
+	<span ng-if="collapsingNodes"><strong>Collapsing nodes for a better viewing experience...</strong></span>
+</div>
+
+
+
+<div id="canvas"></div>

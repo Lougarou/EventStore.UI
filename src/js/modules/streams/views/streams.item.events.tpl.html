@@ -22,8 +22,13 @@
 			<td>{{ event.updated | date:'yyyy-MM-dd HH:mm:ss'}}</td>
 			<td>
 				<a ng-click="toggleJson($event, event)"
-					style="cursor: pointer;" 
+					style="cursor: pointer;"
 				   ng-if="event.isJson || event.isLinkMetaData || event.isMetaData">JSON</a>
+				&nbsp;
+				<a ng-click="visualize(event)" style="cursor:pointer" ng-if="(event.metaDataParsed && event.metaDataParsed.$correlationId) || (event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId)">
+				   <i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
+				</a>
+				{{event.metaData['$causedBy']}}
 			</td>
 		</tr>
 		<tr ng-show="event.showJson">
@@ -31,19 +36,25 @@
 				<div ng-if="event.isJson">
 					<strong>Data</strong>
 					<pre>
-{{ event.data }}					
+{{ event.data }}
 					</pre>
 				</div>
 				<div ng-if="event.metaData">
 					<strong>Metadata</strong>
+					<a ng-click="visualize(event)" style="cursor:pointer" ng-if="event.metaDataParsed && event.metaDataParsed.$correlationId">
+						<i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
+					 </a>
 					<pre>
-{{ event.metaData }}					
+{{ event.metaData }}
 					</pre>
 				</div>
 				<div ng-if="event.isLinkMetaData">
 					<strong>Link metadata</strong>
+					<a ng-click="visualize(event)" style="cursor:pointer" ng-if="event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId">
+						<i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
+					</a>
 					<pre>
-{{ event.linkMetaData }}					
+{{ event.linkMetaData }}
 					</pre>
 				</div>
 			</td>

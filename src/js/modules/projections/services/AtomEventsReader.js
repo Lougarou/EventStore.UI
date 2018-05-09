@@ -58,7 +58,7 @@ define(['./_module'], function (app) {
 			atom = {
 				start: function (params) {
 
-					// make sure that everything is stopped					
+					// make sure that everything is stopped
 					this.stop();
 
 					deferredGlobal = $q.defer();
@@ -93,7 +93,7 @@ define(['./_module'], function (app) {
 						poller.clear();
 						deferredGlobal.reject();
 					});
-					
+
 					return deferredGlobal.promise;
 				},
 				map: function (entries, currentEntries) {
@@ -101,9 +101,25 @@ define(['./_module'], function (app) {
 
 					for(i = 0; i < length; i++) {
 						item = entries[i];
-						
+
 						if(currentEntries[item.title]) {
 							item.showJson = true;
+						}
+						if(item.metaData){
+							try{
+								item.metaDataParsed = JSON.parse(item.metaData);
+							}
+							catch(err){
+								item.metaDataParsed = null;
+							}
+						}
+						if(item.linkMetaData){
+							try{
+								item.linkMetaDataParsed = JSON.parse(item.linkMetaData);
+							}
+							catch(err){
+								item.linkMetaDataParsed = null;
+							}
 						}
 
 						entries[i] = item;

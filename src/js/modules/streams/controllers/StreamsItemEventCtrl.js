@@ -5,16 +5,38 @@ define(['./_module'], function (app) {
     return app.controller('StreamsItemEventCtrl', [
 		'$scope', '$state', '$stateParams', 'StreamsService',
 		function ($scope, $state, $stateParams, streamsService) {
-			
+
 			$scope.streamId = $stateParams.streamId;
 			$scope.isMetadata = $state.current.data.metadata;
 			$scope.eventNumber = $scope.isMetadata ? 'metadata' : $stateParams.eventNumber;
+
+			$scope.visualize = function (event) {
+				var correlationId = (event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId)?event.linkMetaDataParsed.$correlationId:event.metaDataParsed.$correlationId;
+				$state.go('visualize.eventflow', {correlationId: correlationId});
+			};
 
 			streamsService.eventContent($scope.streamId, $scope.eventNumber)
 			.success(function (data) {
 				$scope.evt = data;
 				$scope.isNotTheSame = data.positionStreamId !== data.streamId || data.positionEventNumber !== data.eventNumber;
 				$scope.links = data.links;
+				if($scope.evt.metaData){
+					try{
+						$scope.evt.metaDataParsed = JSON.parse($scope.evt.metaData);
+					}
+					catch(err){
+						$scope.evt.metaDataParsed = null;
+					}
+				}
+
+				if($scope.evt.linkMetaData){
+					try{
+						$scope.evt.linkMetaDataParsed = JSON.parse($scope.evt.linkMetaData);
+					}
+					catch(err){
+						$scope.evt.linkMetaDataParsed = null;
+					}
+				}
 
 				if($scope.isMetadata) {
 					// if this was a metadata, we do not need to update anything

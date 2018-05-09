@@ -87,7 +87,6 @@ define(['./_module'], function (app) {
 					},
 					partitionedState: function (partitionProvider) {
                                           return function (url, params, opt) {
-						console.log(partitionProvider, url, params, opt);
 						var qp;
 
 						if(params && !params.timeout) {
@@ -186,10 +185,9 @@ define(['./_module'], function (app) {
 					},
 					updateQuery: function (url, emit, source) {
 
-						if(source) {
+						if(emit) {
 							url = urlBuilder.simpleBuild(urls.projections.updateQuery, url) + emit;
 						} else {
-							source = emit;
 							url = urlBuilder.simpleBuild(urls.projections.updatePlainQuery, url);
 						}
 

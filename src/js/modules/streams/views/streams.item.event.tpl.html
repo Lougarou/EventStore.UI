@@ -1,7 +1,7 @@
 
 <header class="page-header">
 	<h2 class="page-title">
-		{{ evt.title }} <small ng-if="isNotTheSame">Link from {{ evt.positionEventNumber + '@' + evt.positionStreamId }}</small>		
+		{{ evt.title }} <small ng-if="isNotTheSame">Link from {{ evt.positionEventNumber + '@' + evt.positionStreamId }}</small>
 	</h2>
 	<ul class="page-nav">
 		<li class="page-nav__item">
@@ -46,14 +46,18 @@
 				</pre>
 				</div>
 				<div ng-if="evt.isMetaData">
-				<strong>Metadata</strong><pre>
-{{ evt.metaData }}
-				</pre>				
+				<strong>Metadata</strong>
+				<a ng-click="visualize(evt)" style="cursor:pointer" ng-if="evt.metaDataParsed && evt.metaDataParsed.$correlationId">
+					<i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
+				 </a>
+<pre>{{ evt.metaData }}</pre>
 				</div>
 				<div ng-if="evt.isLinkMetaData">
-				<strong>Link metadata</strong><pre>
-{{ evt.content.linkMetaData }}
-				</pre>					
+				<strong>Link metadata</strong>
+				<a ng-click="visualize(evt)" style="cursor:pointer" ng-if="evt.linkMetaDataParsed && evt.linkMetaDataParsed.$correlationId">
+					<i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
+				</a>
+<pre>{{ evt.linkMetaData }}</pre>
 				</div>
 			</td>
 		</tr>

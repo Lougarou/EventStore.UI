@@ -4,8 +4,8 @@ define(['./_module'], function (app) {
     'use strict';
 
     return app.controller('StreamsItemEventsCtrl', [
-		'$scope', '$stateParams', 'AtomEventsReader', 'MessageService', 'StreamsService',
-		function ($scope, $stateParams, atom, msg, streamsService) {
+		'$scope', '$state', '$stateParams', 'AtomEventsReader', 'MessageService', 'StreamsService',
+		function ($scope, $state, $stateParams, atom, msg, streamsService) {
 
 			var showJson = {};
 
@@ -18,9 +18,9 @@ define(['./_module'], function (app) {
 			.then(null, function () {
 				msg.failure('stream does not exist');
 			}, function (data) {
-				$scope.$parent.headOfStream = data.headOfStream;	
+				$scope.$parent.headOfStream = data.headOfStream;
 				$scope.$broadcast('add-link-header', findSelf(data.links));
-				
+
 				$scope.$parent.streams = atom.map(data.entries, showJson);
 				$scope.$parent.links = data.links;
 				if($scope.streamId === '$all' || $scope.streamId.indexOf('$$$') === 0){
@@ -57,6 +57,11 @@ define(['./_module'], function (app) {
 
 				evt.showJson = !evt.showJson;
 				showJson[evt.title] = evt.showJson;
+			};
+
+			$scope.visualize = function (event) {
+				var correlationId = (event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId)?event.linkMetaDataParsed.$correlationId:event.metaDataParsed.$correlationId;
+				$state.go('visualize.eventflow', {correlationId: correlationId});
 			};
 
 			function deleteStream(streamId){
