@@ -41,7 +41,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
     var margin = {top: 20, right: 120, bottom: 120, left: 120};
     var canvasWidth = document.getElementById(canvas_id).clientWidth;
     var canvasHeight = document.getElementById(canvas_id).clientHeight;
-    var timeScale
+    var timeScale;
     var width = canvasWidth - margin.right - margin.left;
     var height = canvasHeight - margin.top - margin.bottom;
 
@@ -196,8 +196,8 @@ function CollapsibleTree(d3, moment,div_id, scope){
                 maxMoment = moment(d.event.updated)
             }
         });
-        
-        timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([0,width]);
+   
+        timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([1,width]);
        
         // Update the nodes…
         var node = svg.selectAll("g.node")
@@ -374,15 +374,18 @@ function CollapsibleTree(d3, moment,div_id, scope){
         d.x0 = d.x;
         d.y0 = d.y;
         });
-
-        //TODO: change time from long to formatted
+        
         d3.selectAll(".xaxis").remove();
         var xAxis = d3.svg.axis()
             .orient("bottom")
             .scale(timeScale)
-            .ticks(5);
+            .ticks(5)
+            .tickFormat(function(d){
+                var tmpMoment = new moment(d).format("YYYY-MM-DD HH:mm:ss SSSS");
+                return tmpMoment;
+            });
         svg.append("g")
-            .attr("class", "xaxis")   // give it a class so it can be used to select only xaxis labels  below
+            .attr("class", "xaxis")  
             .attr("transform", "translate(0," + (height+25) + ")")
             .attr("fill", "none")
             .call(xAxis);
