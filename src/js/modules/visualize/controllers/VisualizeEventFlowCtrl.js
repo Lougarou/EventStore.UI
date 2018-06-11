@@ -1,13 +1,41 @@
-define(['./_module', 'moment'], 
+define(['./_module', 'moment'],
 function (app, moment) {
     'use strict';
-    
-    return app.controller('VisualizeEventFlowCtrl', ['$scope','d3','StreamsService','MessageService',
-		function VisualizeEventFlowCtrl($scope,d3,streamsService,msg) {
-            
+
+    return app.controller('VisualizeEventFlowCtrl', ['$scope','d3','StreamsService','ProjectionsService','UrlBuilder','MessageService',
+		function VisualizeEventFlowCtrl($scope,d3,streamsService,projectionsService,urlBuilder,msg) {
+
             $scope.causedByProperty = "$causedBy";
             $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope);
-            
+            $scope.projectionStatus = "";
+
+            $scope.updateProjectionStatus = function(){
+                var url = urlBuilder.build('/projection/$by_correlation_id')
+                projectionsService.status(url)
+                .success(function(data){
+                    $scope.projectionStatus = data.status;
+                })
+                .error(function(err){
+                    msg.failure('Error getting $by_correlation_id projection status')
+                    console.log(err);
+                });
+            };
+
+            $scope.updateProjectionStatus();
+
+            $scope.startProjection = function(){
+                var url = urlBuilder.build('/projection/$by_correlation_id')
+                projectionsService.enable(url)
+                .success(function(data){
+                    msg.success('$by_correlation_id projection started')
+                    $scope.updateProjectionStatus();
+                })
+                .error(function(err){
+                    msg.failure('Error starting $by_correlation_id projection')
+                    console.log(err);
+                });
+            }
+
             $scope.go = function(){
                 $scope.tree.clearEvents();
 
@@ -47,10 +75,10 @@ function CollapsibleTree(d3, moment,div_id, scope){
 
     var allEvents = {};
     this.path = [];
-    
+
     //Public functions
     this.draw = function(){
-        d3.select("#"+canvas_id+" > *").remove();        
+        d3.select("#"+canvas_id+" > *").remove();
         tree = d3.layout.tree()
             .size([height, width]);
 
@@ -179,7 +207,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
     }
 
     function update(source) {
-     
+
         // Compute the new tree layout.
         var nodes = tree.nodes(root).reverse(),
             links = tree.links(nodes);
@@ -187,8 +215,8 @@ function CollapsibleTree(d3, moment,div_id, scope){
         var minMoment = moment(source.event.updated);
         var maxMoment = moment(source.event.updated);
         // Normalize for fixed-depth.
-        nodes.forEach(function(d) { 
-            d.y = d.depth * 180; 
+        nodes.forEach(function(d) {
+            d.y = d.depth * 180;
             if(moment(d.event.updated).isBefore(minMoment)){
                 minMoment = moment(d.event.updated)
             }
@@ -196,9 +224,9 @@ function CollapsibleTree(d3, moment,div_id, scope){
                 maxMoment = moment(d.event.updated)
             }
         });
-   
+
         timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([1,width]);
-       
+
         // Update the nodes…
         var node = svg.selectAll("g.node")
             .data(nodes, function(d) { return d.id || (d.id = ++id); });
@@ -207,7 +235,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
         var nodeEnter = node.enter().append("g")
             .attr("class", "node")
             .attr("transform", function(d) {
-                return "translate(" + source.y0 + "," + source.x0 + ")"; 
+                return "translate(" + source.y0 + "," + source.x0 + ")";
             })
             .on("mousedown", function(d){
                 d.clickInProcess = true;
@@ -225,14 +253,19 @@ function CollapsibleTree(d3, moment,div_id, scope){
                 }
             })
             .on("mouseover", function(d){
-                scope.selectedEventName = d.name;
-                scope.selectedEventID = d.event.eventId;
-                scope.selectedEventLink = d.event.id;
-                scope.selectedEventTimestamp = d.event.updated;
+                d.hoverTimeout = setTimeout(function(){
+                    scope.selectedEventType = d.event.eventType;
+                    scope.selectedEventID = d.event.eventId;
+                    scope.selectedEventLink = d.event.id;
+                    scope.selectedEventTimestamp = d.event.updated;
+                },100);
             })
             .on("mouseout", function(d){
-                
-            });                  
+                if(d.hoverTimeout){
+                    clearTimeout(d.hoverTimeout);
+                    d.hoverTimeout = null;
+                }
+            });
 
         // Toggle children on click.
         function click(d) {
@@ -273,7 +306,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
                     var diffMoment = currentMoment.diff(rootMoment);
                     return "["+diffMoment+" ms]";
                 }
-                 
+
             })
             .style("fill-opacity", 1e-6);
 
@@ -281,8 +314,8 @@ function CollapsibleTree(d3, moment,div_id, scope){
         // Transition nodes to their new position.
         var nodeUpdate = node.transition()
             .duration(duration)
-            .attr("transform", function(d) { 
-                return "translate(" + timeScale(moment(d.event.updated)) + "," + d.x + ")"; 
+            .attr("transform", function(d) {
+                return "translate(" + timeScale(moment(d.event.updated)) + "," + d.x + ")";
             });
 
         nodeUpdate.select("circle")
@@ -311,9 +344,9 @@ function CollapsibleTree(d3, moment,div_id, scope){
         var link = svg.selectAll("path.link")
             .data(links, function(d) { return d.target.id; });
 
-        var diagonal = d3.svg.diagonal().projection(function(d) { 
+        var diagonal = d3.svg.diagonal().projection(function(d) {
             if(d.event == undefined){
-                return [d.y, d.x]; 
+                return [d.y, d.x];
             }else{
                 return [timeScale(moment(d.event.updated)), d.x];
             }
@@ -327,16 +360,16 @@ function CollapsibleTree(d3, moment,div_id, scope){
             + " " + ty + "," + (d.source.x + d.target.x) / 2
             + " " + ty + "," + d.target.x;
         };
-        
+
         // Enter any new links at the parent's previous position.
-         
+
         link.enter().insert("path", "g")
             .attr("class", "link")
             .attr("id", function(d){
                 return d.source.id+":"+d.target.id;
             })
             .attr("d",smartDiagonal);
-        
+
         d3.selectAll(".edge-label").remove();
         links.forEach(function (d){
             var sourceMoment = moment(d.source.event.updated)
@@ -365,16 +398,16 @@ function CollapsibleTree(d3, moment,div_id, scope){
                 return smartDiagonal(d);
             })
             .remove();
-        
+
         link.on("mouseover", function(d){
             })
-        
+
         // Stash the old positions for transition.
         nodes.forEach(function(d) {
         d.x0 = d.x;
         d.y0 = d.y;
         });
-        
+
         d3.selectAll(".xaxis").remove();
         var xAxis = d3.svg.axis()
             .orient("bottom")
@@ -385,7 +418,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
                 return tmpMoment;
             });
         svg.append("g")
-            .attr("class", "xaxis")  
+            .attr("class", "xaxis")
             .attr("transform", "translate(0," + (height+25) + ")")
             .attr("fill", "none")
             .call(xAxis);

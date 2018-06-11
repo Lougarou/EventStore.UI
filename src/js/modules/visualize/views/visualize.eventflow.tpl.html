@@ -69,18 +69,18 @@
 		margin: 0;
 		padding: 0;
 	}
-	.event-detail{
+	.event-details{
 		position: absolute;
 		top: 70px;
 		right: 450px;
-		width: 250px;
+		width: 300px;
 	}
 	.edge-label{
 		font-size: 10px;
 	}
 	.node-timestamp{
 		font-size: 10px !important;
-		color: red; 
+		color: red;
 	}
 	.xaxis line{
 	stroke: #2E9625;
@@ -94,7 +94,15 @@
 
 	.xaxis text{
 	fill:black;
-}
+	}
+
+	.projection-status-Running{
+		color: green
+	}
+
+	.projection-status-Stopped{
+		color: red
+	}
 </style>
 <header class="page-header">
 	<h2 class="page-title">Event Flow Visualization</h2>
@@ -105,19 +113,20 @@
 	<div class="tips">
 			<h2>Some tips to get started</h2>
 			<ul>
-				<li>Make sure that the <strong>$by_correlation_id</strong> projection is running.<br/><strong>Current status: </strong></li>
+				<li>Make sure that the <strong>$by_correlation_id</strong> projection is running.<br/><strong>Current status: <span class="projection-status-{{projectionStatus}}">{{projectionStatus}}</span> <button ng-if="projectionStatus=='Stopped'" ng-click="startProjection()">Start</button></strong></li>
 				<li>Enter the <strong>Correlation ID</strong> of the event flow you want to visualize</li>
 				<li>Click on green events <svg height="12" width="12"><circle cx="6" cy="6" r="5" fill="#2E9625" /></svg> to expand</li>
+				<li>Hover on events to see the event details</li>
 				<li>Hold your click on any event for 2 seconds make it the root node</li>
 			</ul>
 	</div>
-	<div class = "event-detail">
-		<h2>Event Detail</h2>
-		<div>Name: {{selectedEventName}}</div>
-		<div>Event ID: {{selectedEventID}}</div>
-		<div>Timestamp: {{selectedEventTimestamp}}</div>
-		<div>id: <a  target="_blank" href="{{selectedEventLink}}">{{selectedEventLink}}</a></div>
-		
+	<div class = "event-details">
+		<h2>Event Details</h2>
+		<div><strong>Type:</strong> {{selectedEventType}}</div>
+		<div><strong>Timestamp:</strong> {{selectedEventTimestamp}}</div>
+		<div><strong>Event ID:</strong> {{selectedEventID}}</div>
+		<div><strong>Link:</strong> <a  target="_blank" href="{{selectedEventLink}}">{{selectedEventLink}}</a></div>
+
 	</div>
 </header>
 
