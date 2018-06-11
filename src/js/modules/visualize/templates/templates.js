@@ -86,7 +86,7 @@ module.run(['$templateCache', function($templateCache) {
     '	}\n' +
     '	.node-timestamp{\n' +
     '		font-size: 10px !important;\n' +
-    '		color: red; \n' +
+    '		color: red;\n' +
     '	}\n' +
     '	.xaxis line{\n' +
     '	stroke: #2E9625;\n' +

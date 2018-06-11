@@ -14,18 +14,18 @@ define(['./_index'], function (app) {
                 url: 'visualize',
                 templateUrl: 'visualize.tpl.html',
                 parent: 'app',
-                abstract: true,                
+                abstract: true,
                 data: {
                     title: 'Visualize'
                 }
             })
             .state('visualize.eventflow', {
-                url: '',
+                url: '/{correlationId}',
                 templateUrl: 'visualize.eventflow.tpl.html',
                 controller: 'VisualizeEventFlowCtrl',
                 data: {
                     title: 'Event Flow Visualization'
                 }
-            })            
+            })
     }]);
 });

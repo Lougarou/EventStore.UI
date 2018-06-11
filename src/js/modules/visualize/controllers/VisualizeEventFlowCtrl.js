@@ -2,8 +2,8 @@ define(['./_module', 'moment'],
 function (app, moment) {
     'use strict';
 
-    return app.controller('VisualizeEventFlowCtrl', ['$scope','d3','StreamsService','ProjectionsService','UrlBuilder','MessageService',
-		function VisualizeEventFlowCtrl($scope,d3,streamsService,projectionsService,urlBuilder,msg) {
+    return app.controller('VisualizeEventFlowCtrl', ['$scope','d3','StreamsService','ProjectionsService','UrlBuilder','$stateParams','MessageService',
+		function VisualizeEventFlowCtrl($scope,d3,streamsService,projectionsService,urlBuilder,$stateParams,msg) {
 
             $scope.causedByProperty = "$causedBy";
             $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope);
@@ -20,8 +20,6 @@ function (app, moment) {
                     console.log(err);
                 });
             };
-
-            $scope.updateProjectionStatus();
 
             $scope.startProjection = function(){
                 var url = urlBuilder.build('/projection/$by_correlation_id')
@@ -55,6 +53,11 @@ function (app, moment) {
 				});
             }
 
+            $scope.updateProjectionStatus();
+            if($stateParams.correlationId){
+                $scope.correlationId = $stateParams.correlationId;
+                $scope.go();
+            }
 		}]);
 });
 
