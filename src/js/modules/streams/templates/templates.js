@@ -49,11 +49,11 @@ try {
 module.run(['$templateCache', function($templateCache) {
   $templateCache.put('streams.item.events.tpl.html',
     '<table><thead><tr><th>Event #</th><th>Name</th><th>Type</th><th>Created Date</th><th></th></tr></thead><tbody ng-repeat="event in streams track by event.title"><tr ng-class="{ \'invalid\': !event.streamId }"><td><a ng-if=event.streamId ui-sref="^.event({streamId: event.streamId, eventNumber: event.eventNumber})">{{ event.positionEventNumber }}</a><text ng-if=!event.streamId>{{ event.positionEventNumber }}</text></td><td><a ng-if=event.streamId ui-sref="^.event({streamId: event.streamId, eventNumber: event.eventNumber})">{{ event.title }}</a><text ng-if=!event.streamId>{{ event.title }}</text></td><td>{{ event.eventType }}</td><td>{{ event.updated | date:\'yyyy-MM-dd HH:mm:ss\'}}</td><td><a ng-click="toggleJson($event, event)" style="cursor: pointer" ng-if="event.isJson || event.isLinkMetaData || event.isMetaData">JSON</a> &nbsp; <a ng-click=visualize(event) style=cursor:pointer ng-if="event.metaDataParsed && event.metaDataParsed.$correlationId"><i class="far fa-eye" style="color:#2E9625; font-size: 16px"></i></a> {{event.metaData[\'$causedBy\']}}</td></tr><tr ng-show=event.showJson><td colspan=5><div ng-if=event.isJson><strong>Data</strong><pre>\n' +
-    '{{ event.data }}					\n' +
+    '{{ event.data }}\n' +
     '					</pre></div><div ng-if=event.metaData><strong>Metadata</strong><pre>\n' +
-    '{{ event.metaData }}					\n' +
+    '{{ event.metaData }}\n' +
     '					</pre></div><div ng-if=event.isLinkMetaData><strong>Link metadata</strong><pre>\n' +
-    '{{ event.linkMetaData }}					\n' +
+    '{{ event.linkMetaData }}\n' +
     '					</pre></div></td></tr></tbody><tbody ng-hide=streams><tr><td colspan=5><em>No events for current path: {{ $stateParams | json }}</em></td></tr></tbody></table>');
 }]);
 })();

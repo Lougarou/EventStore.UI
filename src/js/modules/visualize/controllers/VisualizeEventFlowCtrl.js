@@ -72,7 +72,6 @@ function CollapsibleTree(d3, moment,div_id, scope){
     var margin = {top: 20, right: 120, bottom: 120, left: 120};
     var canvasWidth = document.getElementById(canvas_id).clientWidth;
     var canvasHeight = document.getElementById(canvas_id).clientHeight;
-    var timeScale;
     var width = canvasWidth - margin.right - margin.left;
     var height = canvasHeight - margin.top - margin.bottom;
 
@@ -93,6 +92,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
 
         root.x0 = height / 2;
         root.y0 = 0;
+        root.prevTimeScale = function(d){return 0;};
 
         d3.select(self.frameElement).style("height", "600px");
         this.makeRootNode(root);
@@ -228,7 +228,12 @@ function CollapsibleTree(d3, moment,div_id, scope){
             }
         });
 
-        timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([1,width]);
+        var timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([1,width]);
+
+        var timeTransformNode = function(d, timeScaleFn){
+            d.y = timeScaleFn(moment(d.event.updated));
+            return d;
+        }
 
         // Update the nodes…
         var node = svg.selectAll("g.node")
@@ -238,7 +243,15 @@ function CollapsibleTree(d3, moment,div_id, scope){
         var nodeEnter = node.enter().append("g")
             .attr("class", "node")
             .attr("transform", function(d) {
-                return "translate(" + source.y0 + "," + source.x0 + ")";
+                var origSource = {
+                    x: source.x0,
+                    y: source.y0,
+                    event: {
+                        updated: source.event.updated
+                    }
+                };
+                var n = timeTransformNode(origSource, source.prevTimeScale);
+                return "translate(" + n.y + "," + n.x + ")";
             })
             .on("mousedown", function(d){
                 d.clickInProcess = true;
@@ -318,7 +331,8 @@ function CollapsibleTree(d3, moment,div_id, scope){
         var nodeUpdate = node.transition()
             .duration(duration)
             .attr("transform", function(d) {
-                return "translate(" + timeScale(moment(d.event.updated)) + "," + d.x + ")";
+                var n = timeTransformNode(d, timeScale);
+                return "translate(" + n.y + "," + n.x + ")";
             });
 
         nodeUpdate.select("circle")
@@ -334,7 +348,10 @@ function CollapsibleTree(d3, moment,div_id, scope){
         // Transition exiting nodes to the parent's new position.
         var nodeExit = node.exit().transition()
             .duration(duration)
-            .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+            .attr("transform", function(d) {
+                var n = timeTransformNode(source, timeScale);
+                return "translate(" + n.y + "," + n.x + ")";
+            })
             .remove();
 
         nodeExit.select("circle")
@@ -355,23 +372,52 @@ function CollapsibleTree(d3, moment,div_id, scope){
             }
         });
 
-        var smartDiagonal = function(d){
-            sy = timeScale(moment(d.source.event.updated));
-            ty = timeScale(moment(d.target.event.updated));
-            return "M" + sy + "," + d.source.x
-            + "C" + sy +  "," + (d.source.x + d.target.x) / 2
-            + " " + ty + "," + (d.source.x + d.target.x) / 2
-            + " " + ty + "," + d.target.x;
+        var timeTransformLink = function(d, timeScaleFn){
+            d.source.y = timeScaleFn(moment(d.source.event.updated));
+            d.target.y = timeScaleFn(moment(d.target.event.updated));
+            return d;
+        }
+
+        var diagonal = function(d){
+            return "M" + d.source.y + "," + d.source.x
+            + "C" + d.source.y +  "," + (d.source.x + d.target.x) / 2
+            + " " + d.target.y + "," + (d.source.x + d.target.x) / 2
+            + " " + d.target.y + "," + d.target.x;
         };
 
         // Enter any new links at the parent's previous position.
-
         link.enter().insert("path", "g")
             .attr("class", "link")
             .attr("id", function(d){
                 return d.source.id+":"+d.target.id;
             })
-            .attr("d",smartDiagonal);
+            .attr("d",function(d){
+                var origSource = {
+                    x: source.x0,
+                    y: source.y0,
+                    event: {
+                        updated: source.event.updated
+                    }
+                };
+                return diagonal(timeTransformLink({source: origSource, target: origSource},source.prevTimeScale));
+            });
+
+        link.transition()
+            .duration(duration)
+            .attr("d",function(d){
+                return diagonal(timeTransformLink(d,timeScale));
+            });
+
+        // Transition exiting nodes to the parent's new position.
+        link.exit().transition()
+            .duration(duration)
+            .attr("d", function(d) {
+                return diagonal(timeTransformLink({source: source, target: source},timeScale));
+            })
+            .remove();
+
+        link.on("mouseover", function(d){
+            })
 
         d3.selectAll(".edge-label").remove();
         links.forEach(function (d){
@@ -390,25 +436,11 @@ function CollapsibleTree(d3, moment,div_id, scope){
             .text("+ "+diffMoment+ " ms");
         });
 
-        link.transition()
-            .duration(duration)
-            .attr("d",smartDiagonal);
-
-        // Transition exiting nodes to the parent's new position.
-        link.exit().transition()
-            .duration(duration)
-            .attr("d", function(d) {
-                return smartDiagonal(d);
-            })
-            .remove();
-
-        link.on("mouseover", function(d){
-            })
-
         // Stash the old positions for transition.
         nodes.forEach(function(d) {
-        d.x0 = d.x;
-        d.y0 = d.y;
+            d.x0 = d.x;
+            d.y0 = d.y;
+            d.prevTimeScale = timeScale;
         });
 
         d3.selectAll(".xaxis").remove();

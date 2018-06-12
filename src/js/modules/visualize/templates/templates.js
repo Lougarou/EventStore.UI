@@ -79,7 +79,7 @@ module.run(['$templateCache', function($templateCache) {
     '		position: absolute;\n' +
     '		top: 70px;\n' +
     '		right: 450px;\n' +
-    '		width: 300px;\n' +
+    '		width: 350px;\n' +
     '	}\n' +
     '	.edge-label{\n' +
     '		font-size: 10px;\n' +
