@@ -209,29 +209,39 @@ function CollapsibleTree(d3, moment,div_id, scope){
         update(root);
     }
 
+    function getMicroseconds(d){
+        var offset = 0;
+        if(d.length>20){ //e.g timestamp: 2018-06-13T12:02:58.473717Z
+            var rem = d.substring(20,d.length-1);
+            while(rem.length < 6) rem += '0';
+            offset = (rem[5]-'0') + (rem[4]-'0')*10 + (rem[3]-'0')*100;
+        }
+        return moment(d).valueOf() * 1000 + offset;
+    }
+
     function update(source) {
 
         // Compute the new tree layout.
         var nodes = tree.nodes(root).reverse(),
             links = tree.links(nodes);
 
-        var minMoment = moment(source.event.updated);
-        var maxMoment = moment(source.event.updated);
+        var minMoment = getMicroseconds(source.event.updated);
+        var maxMoment = getMicroseconds(source.event.updated);
         // Normalize for fixed-depth.
         nodes.forEach(function(d) {
             d.y = d.depth * 180;
-            if(moment(d.event.updated).isBefore(minMoment)){
-                minMoment = moment(d.event.updated)
+            if(getMicroseconds(d.event.updated) < minMoment){
+                minMoment = getMicroseconds(d.event.updated)
             }
-            if(moment(d.event.updated).isAfter(maxMoment)){
-                maxMoment = moment(d.event.updated)
+            if(getMicroseconds(d.event.updated) > maxMoment){
+                maxMoment = getMicroseconds(d.event.updated)
             }
         });
 
         var timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([1,width]);
 
         var timeTransformNode = function(d, timeScaleFn){
-            d.y = timeScaleFn(moment(d.event.updated));
+            d.y = timeScaleFn(getMicroseconds(d.event.updated));
             return d;
         }
 
@@ -364,17 +374,9 @@ function CollapsibleTree(d3, moment,div_id, scope){
         var link = svg.selectAll("path.link")
             .data(links, function(d) { return d.target.id; });
 
-        var diagonal = d3.svg.diagonal().projection(function(d) {
-            if(d.event == undefined){
-                return [d.y, d.x];
-            }else{
-                return [timeScale(moment(d.event.updated)), d.x];
-            }
-        });
-
         var timeTransformLink = function(d, timeScaleFn){
-            d.source.y = timeScaleFn(moment(d.source.event.updated));
-            d.target.y = timeScaleFn(moment(d.target.event.updated));
+            d.source.y = timeScaleFn(getMicroseconds(d.source.event.updated));
+            d.target.y = timeScaleFn(getMicroseconds(d.target.event.updated));
             return d;
         }
 
@@ -449,7 +451,8 @@ function CollapsibleTree(d3, moment,div_id, scope){
             .scale(timeScale)
             .ticks(5)
             .tickFormat(function(d){
-                var tmpMoment = new moment(d).format("YYYY-MM-DD HH:mm:ss SSSS");
+                var dMs = d / 1000;
+                var tmpMoment = new moment(dMs).format("YYYY-MM-DD HH:mm:ss SSSS");
                 return tmpMoment;
             });
         svg.append("g")
