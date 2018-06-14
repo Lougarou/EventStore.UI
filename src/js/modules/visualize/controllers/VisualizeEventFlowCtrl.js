@@ -1,10 +1,9 @@
-define(['./_module', 'moment'],
-function (app, moment) {
+define(['./_module', 'moment', 'd3'],
+function (app, moment, d3) {
     'use strict';
 
-    return app.controller('VisualizeEventFlowCtrl', ['$scope','d3','StreamsService','ProjectionsService','UrlBuilder','$stateParams','MessageService',
-		function VisualizeEventFlowCtrl($scope,d3,streamsService,projectionsService,urlBuilder,$stateParams,msg) {
-
+    return app.controller('VisualizeEventFlowCtrl', ['$scope','StreamsService','ProjectionsService','UrlBuilder','$stateParams','MessageService',
+		function VisualizeEventFlowCtrl($scope,streamsService,projectionsService,urlBuilder,$stateParams,msg) {
             $scope.causedByProperty = "$causedBy";
             $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope);
             $scope.projectionStatus = "";
