@@ -66,7 +66,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
     var collapsibleTree = this;
 
     var id = 0;
-    var duration = 750;
+    var duration = 500;
     var canvas_id = div_id;
     var margin = {top: 20, right: 120, bottom: 120, left: 120};
     var canvasWidth = document.getElementById(canvas_id).clientWidth;
@@ -98,15 +98,21 @@ function CollapsibleTree(d3, moment,div_id, scope){
     }
 
     this.collapseAll = function(){
-        collapse(1,0);
+        traverseAllNodes(root,false).forEach(function(node){
+            node.children = null;
+        });
+        update(root);
     }
 
     this.expandAll = function(){
-        collapse(Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER);
+        traverseAllNodes(root,false).forEach(function(node){
+            node.children = node._children;
+        });
+        update(root);
     }
 
     this.collapseReset = function(){
-        collapse(40, 7);
+        smartCollapse();
     }
 
     this.makeRootNode = function(d){
@@ -172,42 +178,6 @@ function CollapsibleTree(d3, moment,div_id, scope){
     }
 
     //Private functions
-    var collapse = function(maxNodesPerLayer, maxDepth){
-        var nodesPerLayer = {};
-        function countNodesPerLayer(d, depth){
-            if(!(depth in nodesPerLayer))
-                nodesPerLayer[depth] = 0;
-            nodesPerLayer[depth]++;
-            if (d._children) {
-                for(var i in d._children){
-                    countNodesPerLayer(d._children[i], depth+1);
-                }
-            }
-        }
-        countNodesPerLayer(root, 0);
-
-        function collapseInternal(d, depth, maxNodesPerLayer, maxDepth, parentCollapsed) {
-            if (d._children) {
-                var collapsed = false;
-                if(depth>=maxDepth || ((depth+1) in nodesPerLayer && nodesPerLayer[depth+1] > maxNodesPerLayer) || parentCollapsed)
-                    collapsed = true;
-                for(var i in d._children){
-                    collapseInternal(d._children[i], depth+1, maxNodesPerLayer, maxDepth, collapsed);
-                }
-
-                if(collapsed){
-                    d.children = null;
-                }
-                else{
-                    d.children = d._children;
-                }
-            }
-        }
-
-        collapseInternal(root, 0, maxNodesPerLayer, maxDepth, false);
-        update(root);
-    }
-
     function getMicroseconds(d){
         var offset = 0;
         if(d.length>20){ //e.g timestamp: 2018-06-13T12:02:58.473717Z
@@ -216,6 +186,137 @@ function CollapsibleTree(d3, moment,div_id, scope){
             offset = (rem[5]-'0') + (rem[4]-'0')*10 + (rem[3]-'0')*100;
         }
         return moment(d).valueOf() * 1000 + offset;
+    }
+
+    function traverseAllNodes(d,onlyVisible){
+        var nodes = [];
+        nodes.push(d);
+        if (d._children && (!onlyVisible || d.children)) {
+            d._children.forEach(function(child){
+                traverseAllNodes(child,onlyVisible).forEach(function(node){
+                    nodes.push(node);
+                });
+            });
+        }
+        return nodes;
+    }
+
+    var findClosestPair = function(c){
+        /*
+        https://gist.github.com/shaan1337/938b0281271fe3503255409443b53eaf
+        O(N log N) divide and conquer algorithm to find closest pair of points based on
+        https://en.wikipedia.org/wiki/Closest_pair_of_points_problem#Planar_case
+
+        Input: array of coordinates sorted by x-coordinate e.g [{x:1,y:2},{x:2,y:4},{x:10,y:2}]
+        Output: returns minimum distance-squared or Number.MAX_SAFE_INTEGER if there are no pair of points
+        */
+        if(c.length<=1) return Number.MAX_SAFE_INTEGER;
+        else if(c.length==2){
+            var dx = c[0].x - c[1].x;
+            var dy = c[0].y - c[1].y;
+            return dx*dx + dy*dy;
+        }
+        var c1 = [];
+        var c2 = [];
+        var mid = Math.floor(c.length/2);
+        for(var i=0;i<c.length;i++){
+            if(i<mid) c1.push(c[i]);
+            else c2.push(c[i]);
+        }
+
+        var d = Number.MAX_SAFE_INTEGER;
+        d = Math.min(d, findClosestPair(c1));
+        d = Math.min(d, findClosestPair(c2));
+
+        var s = [];
+        for (var i=0;i<c.length;i++){
+            var d1 = c[i].x-c[mid].x;
+            if(d1*d1 < d)
+                s.push(c[i]);
+        }
+
+        s = s.sort(function(a,b){
+            return a.y-b.y;
+        });
+
+        for (var i=0;i<s.length;i++)
+        for (var j=i+1;j<s.length && (s[j].y-s[i].y)*(s[j].y-s[i].y)<d;j++){
+            var dx = s[i].x - s[j].x;
+            var dy = s[i].y - s[j].y;
+            d = Math.min(dx*dx + dy*dy, d);
+        }
+
+        return d;
+    }
+
+    var smartCollapse = function(){
+        /*The smart collapse function collapses nodes until the closest pair of nodes is greater than a certain minimum threshold*/
+
+        /*Expand all nodes before starting*/
+        traverseAllNodes(root,false).forEach(function(d){
+            d.children = d._children;
+        });
+
+        update(root);
+
+        smartCollapseInternal = function(){
+            var coords = [];
+            var maxTime = -1;
+            var minTime = Number.MAX_SAFE_INTEGER;
+            /*Traverse all visible nodes*/
+            traverseAllNodes(root,true).forEach(function(d){
+                /*Keep track of node coordinates*/
+                coords.push({x: d.x, y: d.y});
+
+                /*Keep track of smallest/largest timestamp*/
+                var time = getMicroseconds(d.event.updated);
+                d.timeMicroseconds = time;
+                if(time > maxTime)
+                    maxTime = time;
+                if(time < minTime)
+                    minTime = time;
+            });
+
+            /*Find closest pair of nodes*/
+            var threshold = 20;
+            coords = coords.sort(function(a,b){
+                if(a.x != b.x) return a.x-b.x;
+                else return a.y-b.y;
+            });
+            var closestDistance = findClosestPair(coords);
+            if(closestDistance == Number.MAX_SAFE_INTEGER){
+                scope.collapsingNodes = false;
+                return;
+            }
+            else closestDistance = Math.sqrt(closestDistance);
+
+            if(minTime == Number.MAX_SAFE_INTEGER || maxTime == -1){
+                scope.collapsingNodes = false;
+                return;
+            }
+
+            //collapse nodes that are within top 20% of the timescale
+            var timeThreshold = minTime + 0.8 * (maxTime - minTime);
+
+            if(closestDistance < threshold){
+                traverseAllNodes(root,true).forEach(function(d){
+                    if(d.timeMicroseconds >= timeThreshold){
+                        if(d._parent){
+                            d._parent.children = null;
+                        }
+                    }
+                });
+
+                update(root);
+                setTimeout(smartCollapseInternal, duration);
+            }
+            else{
+                scope.collapsingNodes = false;
+            }
+        }
+
+        scope.collapsingNodes = true;
+        smartCollapseInternal();
     }
 
     function update(source) {
