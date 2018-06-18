@@ -385,8 +385,32 @@ function CollapsibleTree(d3, moment,div_id, scope){
                     scope.selectedEventLink = d.event.id;
                     scope.selectedEventTimestamp = d.event.updated;
                 },100);
+
+                //add drop line
+                var x = d.x;
+                var y = d.y;
+                d.dropline = svg.append('line')
+                .attr('x1', function(d){ return y;})
+                .attr('y1', function(d){ return x+7;})
+                .attr('x2', function(d){ return y;})
+                .attr('y2', function(d){ return height+25;})
+                .attr('stroke','gray')
+                .attr('stroke-dasharray','2,2')
+                .attr('stroke-width','1');
+
+                d.droplineText = svg.append("text")
+                .attr("x", function(t) { return y; })
+                .attr("y", function(t) { return height+70; })
+                .attr("text-anchor", "middle")
+                .attr("font-weight","bold")
+                .text(function(t) { return new moment(d.event.updated).format("HH:mm:ss SSS"); });
             })
             .on("mouseout", function(d){
+                if(d.dropline)
+                    d.dropline.remove();
+                if(d.droplineText)
+                    d.droplineText.remove();
+
                 if(d.hoverTimeout){
                     clearTimeout(d.hoverTimeout);
                     d.hoverTimeout = null;
@@ -552,7 +576,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
             .ticks(5)
             .tickFormat(function(d){
                 var dMs = d / 1000;
-                var tmpMoment = new moment(dMs).format("YYYY-MM-DD HH:mm:ss SSSS");
+                var tmpMoment = new moment(dMs).format("YYYY-MM-DD HH:mm:ss SSS");
                 return tmpMoment;
             });
         svg.append("g")
