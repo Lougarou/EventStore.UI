@@ -34,6 +34,7 @@ function (app, moment, d3) {
             }
 
             $scope.go = function(){
+                $scope.selectedEvent = null;
                 $scope.tree.clearEvents();
 
                 var streamDetails = {
@@ -111,7 +112,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
         update(root);
     }
 
-    this.collapseReset = function(){
+    this.smartCollapse = function(){
         smartCollapse();
     }
 
@@ -124,7 +125,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
             newpath.push(d);
         }
         this.path = newpath.reverse();
-        collapsibleTree.collapseReset();
+        collapsibleTree.smartCollapse();
     }
 
     this.addEvents = function(events){
@@ -150,15 +151,15 @@ function CollapsibleTree(d3, moment,div_id, scope){
                             allEvents[obj[causedByProperty]]._children.push(allEvents[event.eventId]);
                         }
                         else{
-                            console.log("parent node not found: "+JSON.stringify(event));
+                            console.error("parent node not found: "+JSON.stringify(event));
                         }
                     }
                     else{
-                        console.log("no $causedBy property: "+JSON.stringify(event));
+                        console.error("no $causedBy property: "+JSON.stringify(event));
                     }
                 }
                 catch(err){
-                    console.log(err);
+                    console.error(err);
                 }
             }
         }
@@ -167,10 +168,10 @@ function CollapsibleTree(d3, moment,div_id, scope){
             update(root);
         }
         else{
-            console.log("root does not exist: "+JSON.stringify(event));
+            console.error("root does not exist: "+JSON.stringify(event));
         }
 
-        collapsibleTree.collapseReset();
+        collapsibleTree.smartCollapse();
     }
 
     this.clearEvents = function(){
@@ -379,12 +380,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
                 }
             })
             .on("mouseover", function(d){
-                d.hoverTimeout = setTimeout(function(){
-                    scope.selectedEventType = d.event.eventType;
-                    scope.selectedEventID = d.event.eventId;
-                    scope.selectedEventLink = d.event.id;
-                    scope.selectedEventTimestamp = d.event.updated;
-                },100);
+                scope.selectedEvent = d.event;
 
                 //add drop line
                 var x = d.x;
@@ -410,11 +406,6 @@ function CollapsibleTree(d3, moment,div_id, scope){
                     d.dropline.remove();
                 if(d.droplineText)
                     d.droplineText.remove();
-
-                if(d.hoverTimeout){
-                    clearTimeout(d.hoverTimeout);
-                    d.hoverTimeout = null;
-                }
             });
 
         // Toggle children on click.

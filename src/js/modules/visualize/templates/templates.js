@@ -51,8 +51,9 @@ module.run(['$templateCache', function($templateCache) {
     '		height: 600px;\n' +
     '	}\n' +
     '\n' +
-    '	.input_control{\n' +
-    '		width: 150px;\n' +
+    '	.input_controls{\n' +
+    '		width: 400px;\n' +
+    '		float: left;\n' +
     '	}\n' +
     '\n' +
     '	.input_controls div{\n' +
@@ -60,14 +61,11 @@ module.run(['$templateCache', function($templateCache) {
     '	}\n' +
     '\n' +
     '	.input_controls label{\n' +
-    '		display:inline-block;\n' +
     '		width: 140px;\n' +
     '	}\n' +
     '\n' +
     '	.tips{\n' +
-    '		position: absolute;\n' +
-    '		top: 70px;\n' +
-    '		right: 10px;\n' +
+    '		float:right;\n' +
     '		width: 400px;\n' +
     '	}\n' +
     '\n' +
@@ -75,12 +73,23 @@ module.run(['$templateCache', function($templateCache) {
     '		margin: 0;\n' +
     '		padding: 0;\n' +
     '	}\n' +
+    '\n' +
     '	.event-details{\n' +
-    '		position: absolute;\n' +
-    '		top: 70px;\n' +
-    '		right: 450px;\n' +
+    '		width: 350px;\n' +
+    '		float: left;\n' +
+    '	}\n' +
+    '\n' +
+    '	.event-data{\n' +
+    '		float: left;\n' +
     '		width: 350px;\n' +
     '	}\n' +
+    '\n' +
+    '	.event-data pre{\n' +
+    '		background: #FCFCCF;\n' +
+    '		height: 130px;\n' +
+    '		overflow:scroll;\n' +
+    '	}\n' +
+    '\n' +
     '	.edge-label{\n' +
     '		font-size: 10px;\n' +
     '	}\n' +
@@ -108,7 +117,17 @@ module.run(['$templateCache', function($templateCache) {
     '\n' +
     '	.projection-status-Stopped{\n' +
     '		color: red\n' +
-    '	}</style><header class=page-header><h2 class=page-title>Event Flow Visualization</h2><ul class=page-nav><li class=page-nav__item></li></ul><div class=tips><h2>Some tips to get started</h2><ul><li>Make sure that the <strong>$by_correlation_id</strong> projection is running.<br><strong>Current status: <span class=projection-status-{{projectionStatus}}>{{projectionStatus}}</span> <button ng-if="projectionStatus==\'Stopped\'" ng-click=startProjection()>Start</button></strong></li><li>Enter the <strong>Correlation ID</strong> of the event flow you want to visualize</li><li>Click on green events <svg height=12 width=12><circle cx=6 cy=6 r=5 fill="#2E9625"></svg> to expand</li><li>Hover on events to see the event details</li><li>Hold your click on any event for 2 seconds make it the root node</li><li>A maximum of <strong>1000 events</strong> will be loaded and displayed</li></ul></div><div class=event-details><h2>Event Details</h2><div><strong>Type:</strong> {{selectedEventType}}</div><div><strong>Timestamp:</strong> {{selectedEventTimestamp}}</div><div><strong>Event ID:</strong> {{selectedEventID}}</div><div><strong>Link:</strong> <a target=_blank href={{selectedEventLink}}>{{selectedEventLink}}</a></div></div></header><div class=input_controls><form><div><label for=correlation_id_prop>Correlation ID property:&nbsp;</label><input class=input_control id=correlation_id_property value=$correlationId disabled=true></div><div><label for=caused_by_prop>Caused By property:&nbsp;</label><input class=input_control id=caused_by_property ng-model=causedByProperty></div><div><label for=correlation_id>Correlation ID:&nbsp;</label><input class=input_control id=correlation_id ng-model=correlationId> <input type=submit ng-click=go() value="Let\'s go!"></div></form></div><div style=clear:both></div><div class=tree_path><span ng-repeat="node in tree.path"><div class=tree_path_separator ng-if="$index > 0">></div><div style="float: left" ng-click=tree.makeRootNode(node)><a href=javascript:;>{{ node.name }}</a></div></span><div style=clear:both></div></div><div class=tree_controls><button ng-disabled=collapsingNodes ng-click=tree.collapseAll()>Collapse all</button> <button ng-disabled=collapsingNodes ng-click=tree.expandAll()>Expand all</button> <button ng-disabled=collapsingNodes ng-click=tree.collapseReset()>Reset</button> <span ng-if=collapsingNodes><strong>Collapsing nodes for a better viewing experience...</strong></span></div><div id=canvas></div>');
+    '	}\n' +
+    '\n' +
+    '	.visualize-form-table{\n' +
+    '		border: 0;\n' +
+    '	}\n' +
+    '\n' +
+    '	.visualize-form-table tbody td {\n' +
+    '		border: 0;\n' +
+    '	}</style><header></header><div class=input_controls><h2>Event Flow Visualization</h2><form><table border=0 class=visualize-form-table><tr><td><label for=correlation_id_prop>Correlation ID property:</label></td><td><input class=input_control id=correlation_id_property value=$correlationId disabled=true></td></tr><tr><td><label for=caused_by_prop>Caused By property:</label></td><td><input class=input_control id=caused_by_property ng-model=causedByProperty></td></tr><tr><td><label for=correlation_id>Correlation ID:</label></td><td><input class=input_control id=correlation_id ng-model=correlationId></td></tr><tr><td colspan=2><input type=submit ng-click=go() value="Let\'s go!"></td></tr></table></form></div><div class=event-details ng-if=selectedEvent><h2>Event Details</h2><div><div><strong>Type:</strong> {{selectedEvent.eventType}}</div><div><strong>Timestamp:</strong> {{selectedEvent.updated}}</div><div><strong>Event ID:</strong> {{selectedEvent.eventId}}</div><div><strong>Link:</strong> <a target=_blank href={{selectedEvent.id}}>{{selectedEvent.id}}</a></div></div></div><div class=event-data ng-if=selectedEvent><h2>Event Data</h2><pre>\n' +
+    '		{{selectedEvent.data}}\n' +
+    '	</pre></div><div class=tips><h2>Some tips to get started</h2><ul><li>Make sure that the <strong>$by_correlation_id</strong> projection is running.<br><strong>Current status: <span class=projection-status-{{projectionStatus}}>{{projectionStatus}}</span> <button ng-if="projectionStatus==\'Stopped\'" ng-click=startProjection()>Start</button></strong></li><li>Enter the <strong>Correlation ID</strong> of the event flow you want to visualize</li><li>Click on green events <svg height=12 width=12><circle cx=6 cy=6 r=5 fill="#2E9625"></svg> to expand</li><li>Hover on events to see the event details</li><li>Hold your click on any event for 2 seconds make it the root node</li><li>A maximum of <strong>1000 events</strong> will be loaded and displayed</li></ul></div><div style=clear:both></div><div class=tree_path><span ng-repeat="node in tree.path"><div class=tree_path_separator ng-if="$index > 0">></div><div style="float: left" ng-click=tree.makeRootNode(node)><a href=javascript:;>{{ node.name }}</a></div></span><div style=clear:both></div></div><div class=tree_controls><button ng-disabled=collapsingNodes ng-click=tree.collapseAll()>Collapse all</button> <button ng-disabled=collapsingNodes ng-click=tree.expandAll()>Expand all</button> <button ng-disabled=collapsingNodes ng-click=tree.smartCollapse()>Smart Collapse</button> <span ng-if=collapsingNodes><strong>Collapsing nodes for a better viewing experience...</strong></span></div><div id=canvas></div>');
 }]);
 })();
 
