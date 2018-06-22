@@ -5,7 +5,7 @@ function (app, moment, d3) {
     return app.controller('VisualizeEventFlowCtrl', ['$scope','StreamsService','ProjectionsService','UrlBuilder','$stateParams','MessageService',
 		function VisualizeEventFlowCtrl($scope,streamsService,projectionsService,urlBuilder,$stateParams,msg) {
             $scope.causedByProperty = "$causedBy";
-            $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope);
+            $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope, msg);
             $scope.projectionStatus = "";
 
             $scope.updateProjectionStatus = function(){
@@ -61,7 +61,7 @@ function (app, moment, d3) {
 		}]);
 });
 
-function CollapsibleTree(d3, moment,div_id, scope){
+function CollapsibleTree(d3, moment,div_id, scope, msg){
     //Based on d3 collapsible tree: https://bl.ocks.org/mbostock/4339083
     var svg, root, tree;
     var collapsibleTree = this;
@@ -129,6 +129,12 @@ function CollapsibleTree(d3, moment,div_id, scope){
     }
 
     this.addEvents = function(events){
+        var rootPosition = Number.MAX_SAFE_INTEGER;
+        for(var i in events){
+            var event = events[i];
+            rootPosition = Math.min(rootPosition, event.positionEventNumber);
+        }
+
         for(var i in events){
             var event = events[i];
             allEvents[event.eventId] = {};
@@ -137,7 +143,7 @@ function CollapsibleTree(d3, moment,div_id, scope){
             allEvents[event.eventId]._children = [];
             allEvents[event.eventId]._parent = null;
 
-            if(event.positionEventNumber == 0){
+            if(event.positionEventNumber == rootPosition){
                 root = allEvents[event.eventId];
                 collapsibleTree.draw();
             }
@@ -152,14 +158,17 @@ function CollapsibleTree(d3, moment,div_id, scope){
                         }
                         else{
                             console.error("parent node not found: "+JSON.stringify(event));
+                            msg.failure("Parent node not found for event: "+event.eventId+" ("+causedByProperty+": "+obj[causedByProperty]+")");
                         }
                     }
                     else{
-                        console.error("no $causedBy property: "+JSON.stringify(event));
+                        console.error("no "+causedByProperty+" property on event: "+JSON.stringify(event));
+                        msg.failure("No "+causedByProperty+" property on event: "+event.eventId);
                     }
                 }
                 catch(err){
                     console.error(err);
+                    msg.failure("An error has occured. Please check the console log for more details");
                 }
             }
         }
@@ -168,7 +177,8 @@ function CollapsibleTree(d3, moment,div_id, scope){
             update(root);
         }
         else{
-            console.error("root does not exist: "+JSON.stringify(event));
+            console.error("Root node does not exist.");
+            msg.failure("Root node does not exist.");
         }
 
         collapsibleTree.smartCollapse();
