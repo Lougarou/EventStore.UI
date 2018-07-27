@@ -289,7 +289,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
             });
 
             /*Find closest pair of nodes*/
-            var threshold = 20;
+            var threshold = 150;
             coords = coords.sort(function(a,b){
                 if(a.x != b.x) return a.x-b.x;
                 else return a.y-b.y;
@@ -330,8 +330,44 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
         smartCollapseInternal();
     }
 
-    function update(source) {
+    function formatTime(time){
+        var ms = 1;
+        var sec = 1000 * ms;
+        var minute = 60 * sec;
+        var hour = 60 * minute;
+        var day = 24 * hour;
+        var week = 7 * day;
 
+        if(time >= week){
+            var weeks = round(time / week);
+            return weeks+" week"+(weeks>1?"s":"");
+        } else if(time >= day){
+            var days = round(time / day);
+            return days+" day"+(days>1?"s":"");
+        } else if(time >= hour){
+            var hours = round(time / hour);
+            return hours+" hour"+(hours>1?"s":"");
+        } else if(time >= minute){
+            var mins = Math.floor(time / minute);
+            return mins+" min"+(mins>1?"s":"");
+        } else if(time >= sec){
+            var secs = Math.floor(time / sec);
+            return secs+" s";
+        }
+
+        return time+" ms";
+    }
+
+    function round(val){
+        return Math.round(val*10)/10;
+    }
+
+    function truncateString(str, len){
+        if(str.length <= len) return str;
+        return str.substring(0,len-2)+"..";
+    }
+
+    function update(source) {
         // Compute the new tree layout.
         var nodes = tree.nodes(root).reverse(),
             links = tree.links(nodes);
@@ -439,15 +475,23 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
         nodeEnter.append("text") //node name
             .attr("x", function(d) { return d._children ? -12 : 12; })
             .attr("dy", ".35em")
+            .attr("class","node-name")
             .attr("text-anchor", function(d) { return d._children ? "end" : "start"; })
-            .text(function(d) { return d.name; })
+            .text(function(d) {
+                var maxLength = 20;
+                if(!d._parent || (d._parent && d._parent._children && d._parent._children.length==1)){ //root node or parent has a single child
+                    maxLength = 14;
+                }
+                if(d.name.length > maxLength) return truncateString(d.name, maxLength);
+                else return d.name;
+            })
             .style("fill-opacity", 1e-6);
 
         nodeEnter.append("text") //timestamp
-            .attr("x", function(d) { return d._children ? 30 : -30; })
+            .attr("x", function(d) { return d._children ? 12 : -12; })
             .attr("dy", ".35em")
             .attr("class","node-timestamp")
-            .attr("text-anchor", "middle")
+            .attr("text-anchor", "start")
             .text(function(d) {
                 if(d.event.eventId == root.event.eventId){ //is root
                     return "[0 ms]";
@@ -455,7 +499,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
                     var rootMoment = moment(root.event.updated)
                     var currentMoment = moment(d.event.updated)
                     var diffMoment = currentMoment.diff(rootMoment);
-                    return "["+diffMoment+" ms]";
+                    return "["+formatTime(diffMoment)+"]";
                 }
 
             })
@@ -557,10 +601,10 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
             .attr("href", "#"+d.source.id+":"+d.target.id)
             .append("tspan")
             .attr("dy", function(){
-                if(d.target.x > d.source.x) return "10";
-                return "-3";
+                if(d.target.x > d.source.x) return "15";
+                return "-15";
             })
-            .text("+ "+diffMoment+ " ms");
+            .text("+ "+formatTime(diffMoment));
         });
 
         // Stash the old positions for transition.
