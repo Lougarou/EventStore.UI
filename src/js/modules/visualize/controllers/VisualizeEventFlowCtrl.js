@@ -36,21 +36,35 @@ function (app, moment, d3) {
             $scope.go = function(){
                 $scope.selectedEvent = null;
                 $scope.tree.clearEvents();
+                var firstBatch = true;
+                var nextEventPosition = 0;
+                function loadEvents(startEventPosition){
+                    var streamDetails = {
+                        streamId: "$bc-"+$scope.correlationId,
+                        position: ""+startEventPosition,
+                        type: "forward",
+                        count: "1000"
+                    }                    
 
-                var streamDetails = {
-                    streamId: "$bc-"+$scope.correlationId,
-                    position: "0",
-                    type: "forward",
-                    count: "1000"
+                    streamsService.streamEvents(streamDetails)
+                    .success(function (data) {
+                        if(data.entries.length > 0){
+                            $scope.tree.addEvents(data.entries.reverse(), firstBatch);
+                            firstBatch = false;
+                            nextEventPosition = data.entries[data.entries.length-1].positionEventNumber+1;
+                        }
+                        setTimeout(function(){
+                            loadEvents(nextEventPosition)
+                        }
+                        ,3000);
+                    })
+                    .error(function (err) {
+                        msg.failure('Correlation Id stream ('+streamDetails.streamId+') does not exist, please make sure that the $by_correlation_id projection is running');
+                        setTimeout(loadEvents, 3000);
+                    });
                 }
-
-                streamsService.streamEvents(streamDetails)
-				.success(function (data) {
-                    $scope.tree.addEvents(data.entries.reverse());
-				})
-				.error(function (err) {
-					msg.failure('Correlation Id stream ('+streamDetails.streamId+') does not exist, please make sure that the $by_correlation_id projection is running');
-				});
+                loadEvents(nextEventPosition);
+                
             }
 
             $scope.updateProjectionStatus();
@@ -65,7 +79,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
     //Based on d3 collapsible tree: https://bl.ocks.org/mbostock/4339083
     var svg, root, tree;
     var collapsibleTree = this;
-
+    
     var id = 0;
     var duration = 500;
     var canvas_id = div_id;
@@ -76,6 +90,8 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
     var height = canvasHeight - margin.top - margin.bottom;
 
     var allEvents = {};
+    var rootPosition = Number.MAX_SAFE_INTEGER;
+
     this.path = [];
 
     //Public functions
@@ -128,14 +144,18 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
         collapsibleTree.smartCollapse();
     }
 
-    this.addEvents = function(events){
-        var rootPosition = Number.MAX_SAFE_INTEGER;
-        for(var i in events){
-            var event = events[i];
-            rootPosition = Math.min(rootPosition, event.positionEventNumber);
+    this.addEvents = function(events, firstBatch){
+        
+        if(firstBatch){
+            for(var i in events){
+                var event = events[i];
+                rootPosition = Math.min(rootPosition, event.positionEventNumber);
+                
+            }
         }
 
         for(var i in events){
+            
             var event = events[i];
             allEvents[event.eventId] = {};
             allEvents[event.eventId].event = event;
@@ -186,6 +206,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
 
     this.clearEvents = function(){
         allEvents = {};
+        rootPosition = Number.MAX_SAFE_INTEGER;
     }
 
     //Private functions
