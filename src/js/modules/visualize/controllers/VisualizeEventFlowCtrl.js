@@ -4,9 +4,22 @@ function (app, moment, d3) {
 
     return app.controller('VisualizeEventFlowCtrl', ['$scope','StreamsService','ProjectionsService','UrlBuilder','$stateParams','MessageService',
 		function VisualizeEventFlowCtrl($scope,streamsService,projectionsService,urlBuilder,$stateParams,msg) {
+            $scope.correlationIdProperty = "Loading...";
             $scope.causedByProperty = "$causedBy";
             $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope, msg);
             $scope.projectionStatus = "";
+
+            $scope.updateCorrelationIdProperty = function(){
+                var url = urlBuilder.build('/projection/$by_correlation_id')
+                projectionsService.query(url,true)
+                .success(function(data){
+                    $scope.correlationIdProperty = data.correlationIdProperty;
+                })
+                .error(function(err){
+                    msg.failure('Error getting $by_correlation_id projection source')
+                    console.error(err);
+                });
+            };
 
             $scope.updateProjectionStatus = function(){
                 var url = urlBuilder.build('/projection/$by_correlation_id')
@@ -16,7 +29,7 @@ function (app, moment, d3) {
                 })
                 .error(function(err){
                     msg.failure('Error getting $by_correlation_id projection status')
-                    console.log(err);
+                    console.error(err);
                 });
             };
 
@@ -29,7 +42,7 @@ function (app, moment, d3) {
                 })
                 .error(function(err){
                     msg.failure('Error starting $by_correlation_id projection')
-                    console.log(err);
+                    console.error(err);
                 });
             }
 
@@ -67,6 +80,7 @@ function (app, moment, d3) {
 
             }
 
+            $scope.updateCorrelationIdProperty();
             $scope.updateProjectionStatus();
             if($stateParams.correlationId){
                 $scope.correlationId = $stateParams.correlationId;
