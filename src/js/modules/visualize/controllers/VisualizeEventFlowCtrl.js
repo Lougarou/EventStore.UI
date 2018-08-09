@@ -44,7 +44,7 @@ function (app, moment, d3) {
                         position: ""+startEventPosition,
                         type: "forward",
                         count: "1000"
-                    }                    
+                    }
 
                     streamsService.streamEvents(streamDetails)
                     .success(function (data) {
@@ -64,7 +64,7 @@ function (app, moment, d3) {
                     });
                 }
                 loadEvents(nextEventPosition);
-                
+
             }
 
             $scope.updateProjectionStatus();
@@ -79,7 +79,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
     //Based on d3 collapsible tree: https://bl.ocks.org/mbostock/4339083
     var svg, root, tree;
     var collapsibleTree = this;
-    
+
     var id = 0;
     var duration = 500;
     var canvas_id = div_id;
@@ -145,23 +145,24 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
     }
 
     this.addEvents = function(events, firstBatch){
-        
         if(firstBatch){
             for(var i in events){
                 var event = events[i];
                 rootPosition = Math.min(rootPosition, event.positionEventNumber);
-                
+
             }
         }
 
         for(var i in events){
-            
+
             var event = events[i];
+            var linkMetaData = JSON.parse(event.linkMetaData);
             allEvents[event.eventId] = {};
             allEvents[event.eventId].event = event;
             allEvents[event.eventId].name = event.eventType;
             allEvents[event.eventId]._children = [];
             allEvents[event.eventId]._parent = null;
+            allEvents[event.eventId].timestamp = linkMetaData["$originalEventTimestamp"];
 
             if(event.positionEventNumber == rootPosition){
                 root = allEvents[event.eventId];
@@ -301,7 +302,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
                 coords.push({x: d.x, y: d.y});
 
                 /*Keep track of smallest/largest timestamp*/
-                var time = getMicroseconds(d.event.updated);
+                var time = getMicroseconds(d.timestamp);
                 d.timeMicroseconds = time;
                 if(time > maxTime)
                     maxTime = time;
@@ -393,23 +394,23 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
         var nodes = tree.nodes(root).reverse(),
             links = tree.links(nodes);
 
-        var minMoment = getMicroseconds(source.event.updated);
-        var maxMoment = getMicroseconds(source.event.updated);
+        var minMoment = getMicroseconds(source.timestamp);
+        var maxMoment = getMicroseconds(source.timestamp);
         // Normalize for fixed-depth.
         nodes.forEach(function(d) {
             d.y = d.depth * 180;
-            if(getMicroseconds(d.event.updated) < minMoment){
-                minMoment = getMicroseconds(d.event.updated)
+            if(getMicroseconds(d.timestamp) < minMoment){
+                minMoment = getMicroseconds(d.timestamp)
             }
-            if(getMicroseconds(d.event.updated) > maxMoment){
-                maxMoment = getMicroseconds(d.event.updated)
+            if(getMicroseconds(d.timestamp) > maxMoment){
+                maxMoment = getMicroseconds(d.timestamp)
             }
         });
 
         var timeScale = d3.scale.linear().domain([minMoment, maxMoment]).range([1,width]);
 
         var timeTransformNode = function(d, timeScaleFn){
-            d.y = timeScaleFn(getMicroseconds(d.event.updated));
+            d.y = timeScaleFn(getMicroseconds(d.timestamp));
             return d;
         }
 
@@ -424,9 +425,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
                 var origSource = {
                     x: source.x0,
                     y: source.y0,
-                    event: {
-                        updated: source.event.updated
-                    }
+                    timestamp: source.timestamp
                 };
                 var n = timeTransformNode(origSource, source.prevTimeScale);
                 return "translate(" + n.y + "," + n.x + ")";
@@ -466,7 +465,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
                 .attr("y", function(t) { return height+70; })
                 .attr("text-anchor", "middle")
                 .attr("font-weight","bold")
-                .text(function(t) { return new moment(d.event.updated).format("HH:mm:ss SSS"); });
+                .text(function(t) { return new moment(d.timestamp).format("HH:mm:ss SSS"); });
             })
             .on("mouseout", function(d){
                 if(d.dropline)
@@ -517,8 +516,8 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
                 if(d.event.eventId == root.event.eventId){ //is root
                     return "[0 ms]";
                 }else{
-                    var rootMoment = moment(root.event.updated)
-                    var currentMoment = moment(d.event.updated)
+                    var rootMoment = moment(root.timestamp)
+                    var currentMoment = moment(d.timestamp)
                     var diffMoment = currentMoment.diff(rootMoment);
                     return "["+formatTime(diffMoment)+"]";
                 }
@@ -565,8 +564,8 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
             .data(links, function(d) { return d.target.id; });
 
         var timeTransformLink = function(d, timeScaleFn){
-            d.source.y = timeScaleFn(getMicroseconds(d.source.event.updated));
-            d.target.y = timeScaleFn(getMicroseconds(d.target.event.updated));
+            d.source.y = timeScaleFn(getMicroseconds(d.source.timestamp));
+            d.target.y = timeScaleFn(getMicroseconds(d.target.timestamp));
             return d;
         }
 
@@ -587,9 +586,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
                 var origSource = {
                     x: source.x0,
                     y: source.y0,
-                    event: {
-                        updated: source.event.updated
-                    }
+                    timestamp: source.timestamp
                 };
                 return diagonal(timeTransformLink({source: origSource, target: origSource},source.prevTimeScale));
             });
@@ -613,8 +610,8 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
 
         d3.selectAll(".edge-label").remove();
         links.forEach(function (d){
-            var sourceMoment = moment(d.source.event.updated)
-            var targetMoment = moment(d.target.event.updated)
+            var sourceMoment = moment(d.source.timestamp)
+            var targetMoment = moment(d.target.timestamp)
             var diffMoment = targetMoment.diff(sourceMoment);
             svg.append("text").attr("class","edge-label")
             .append("textPath")
