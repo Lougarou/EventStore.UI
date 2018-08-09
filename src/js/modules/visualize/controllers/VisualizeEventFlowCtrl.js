@@ -73,7 +73,6 @@ function (app, moment, d3) {
                     })
                     .error(function (err) {
                         msg.failure('Correlation Id stream ('+streamDetails.streamId+') does not exist, please make sure that the $by_correlation_id projection is running');
-                        setTimeout(loadEvents, 3000);
                     });
                 }
                 loadEvents(nextEventPosition);
