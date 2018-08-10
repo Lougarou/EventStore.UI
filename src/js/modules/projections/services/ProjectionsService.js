@@ -87,7 +87,6 @@ define(['./_module'], function (app) {
 					},
 					partitionedState: function (partitionProvider) {
                                           return function (url, params, opt) {
-						console.log(partitionProvider, url, params, opt);
 						var qp;
 
 						if(params && !params.timeout) {

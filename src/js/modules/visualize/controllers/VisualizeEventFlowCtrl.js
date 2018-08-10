@@ -170,34 +170,45 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
 
             var event = events[i];
             var linkMetaData = JSON.parse(event.linkMetaData);
-            allEvents[event.eventId] = {};
-            allEvents[event.eventId].event = event;
-            allEvents[event.eventId].name = event.eventType;
-            allEvents[event.eventId]._children = [];
-            allEvents[event.eventId]._parent = null;
-            allEvents[event.eventId].timestamp = linkMetaData["$originalEventTimestamp"];
+            var isLink = ("$link" in linkMetaData);
+            var eventId = !isLink?event.eventId:linkMetaData["$link"].eventId;
+
+            allEvents[eventId] = {};
+            allEvents[eventId].eventId = eventId;
+            allEvents[eventId].event = event;
+            allEvents[eventId].name = event.eventType;
+            allEvents[eventId]._children = [];
+            allEvents[eventId]._parent = null;
+            allEvents[eventId].timestamp = linkMetaData["$eventTimestamp"];
 
             if(event.positionEventNumber == rootPosition){
-                root = allEvents[event.eventId];
+                root = allEvents[eventId];
                 collapsibleTree.draw();
             }
             else{
                 try{
-                    var obj = JSON.parse(event.metaData);
+                    var metadata = JSON.parse(event.metaData);
                     var causedByProperty = scope.causedByProperty;
-                    if(obj[causedByProperty]){
-                        if(obj[causedByProperty] in allEvents){
-                            allEvents[event.eventId]._parent = allEvents[obj[causedByProperty]];
-                            allEvents[obj[causedByProperty]]._children.push(allEvents[event.eventId]);
+
+                    var causedByTag = null;
+                    if(isLink)
+                        causedByTag = linkMetaData["$link"]["metadata"][causedByProperty];
+                    else
+                        causedByTag = metadata[causedByProperty];
+
+                    if(causedByTag){
+                        if(causedByTag in allEvents){
+                            allEvents[eventId]._parent = allEvents[causedByTag];
+                            allEvents[causedByTag]._children.push(allEvents[eventId]);
                         }
                         else{
                             console.error("parent node not found: "+JSON.stringify(event));
-                            msg.failure("Parent node not found for event: "+event.eventId+" ("+causedByProperty+": "+obj[causedByProperty]+")");
+                            msg.failure("Parent node not found for event: "+eventId+" ("+causedByProperty+": "+causedByTag+")");
                         }
                     }
                     else{
                         console.error("no "+causedByProperty+" property on event: "+JSON.stringify(event));
-                        msg.failure("No "+causedByProperty+" property on event: "+event.eventId);
+                        msg.failure("No "+causedByProperty+" property on event: "+eventId);
                     }
                 }
                 catch(err){
@@ -526,7 +537,7 @@ function CollapsibleTree(d3, moment,div_id, scope, msg){
             .attr("class","node-timestamp")
             .attr("text-anchor", "start")
             .text(function(d) {
-                if(d.event.eventId == root.event.eventId){ //is root
+                if(d.eventId == root.eventId){ //is root
                     return "[0 ms]";
                 }else{
                     var rootMoment = moment(root.timestamp)
