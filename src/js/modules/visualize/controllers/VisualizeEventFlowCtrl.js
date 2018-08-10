@@ -4,6 +4,7 @@ function (app, moment, d3) {
 
     return app.controller('VisualizeEventFlowCtrl', ['$scope','StreamsService','ProjectionsService','UrlBuilder','$stateParams','MessageService',
 		function VisualizeEventFlowCtrl($scope,streamsService,projectionsService,urlBuilder,$stateParams,msg) {
+            $scope.epoch = 0;
             $scope.correlationIdProperty = "Loading...";
             $scope.causedByProperty = "$causedBy";
             $scope.tree = new CollapsibleTree(d3, moment, "canvas", $scope, msg);
@@ -49,9 +50,11 @@ function (app, moment, d3) {
             $scope.go = function(){
                 $scope.selectedEvent = null;
                 $scope.tree.clearEvents();
+                $scope.epoch++;
                 var firstBatch = true;
                 var nextEventPosition = 0;
-                function loadEvents(startEventPosition){
+                function loadEvents(startEventPosition, epoch){
+                    if(epoch != $scope.epoch) return;
                     var streamDetails = {
                         streamId: "$bc-"+$scope.correlationId,
                         position: ""+startEventPosition,
@@ -61,23 +64,30 @@ function (app, moment, d3) {
 
                     streamsService.streamEvents(streamDetails)
                     .success(function (data) {
+                        if(epoch != $scope.epoch) return;
                         if(data.entries.length > 0){
                             $scope.tree.addEvents(data.entries.reverse(), firstBatch);
                             firstBatch = false;
                             nextEventPosition = data.entries[data.entries.length-1].positionEventNumber+1;
                         }
                         setTimeout(function(){
-                            loadEvents(nextEventPosition)
+                            loadEvents(nextEventPosition, epoch)
                         }
                         ,3000);
                     })
                     .error(function (err) {
+                        if(epoch != $scope.epoch) return;
                         msg.failure('Correlation Id stream ('+streamDetails.streamId+') does not exist, please make sure that the $by_correlation_id projection is running');
                     });
                 }
-                loadEvents(nextEventPosition);
+                loadEvents(nextEventPosition, $scope.epoch);
 
             }
+
+            $scope.$on('$destroy', function () {
+                if($scope.epoch)
+                    $scope.epoch++;
+            });
 
             $scope.updateCorrelationIdProperty();
             $scope.updateProjectionStatus();
