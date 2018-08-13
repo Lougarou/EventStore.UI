@@ -25,7 +25,7 @@
 					style="cursor: pointer;"
 				   ng-if="event.isJson || event.isLinkMetaData || event.isMetaData">JSON</a>
 				&nbsp;
-				<a ng-click="visualize(event)" style="cursor:pointer" ng-if="event.isJson && event.metaDataParsed && event.metaDataParsed.$correlationId">
+				<a ng-click="visualize(event)" style="cursor:pointer" ng-if="(event.metaDataParsed && event.metaDataParsed.$correlationId) || (event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId)">
 				   <i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
 				</a>
 				{{event.metaData['$causedBy']}}
@@ -41,7 +41,7 @@
 				</div>
 				<div ng-if="event.metaData">
 					<strong>Metadata</strong>
-					<a ng-click="visualize(event)" style="cursor:pointer" ng-if="event.isJson && event.metaDataParsed && event.metaDataParsed.$correlationId">
+					<a ng-click="visualize(event)" style="cursor:pointer" ng-if="event.metaDataParsed && event.metaDataParsed.$correlationId">
 						<i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
 					 </a>
 					<pre>
@@ -50,6 +50,9 @@
 				</div>
 				<div ng-if="event.isLinkMetaData">
 					<strong>Link metadata</strong>
+					<a ng-click="visualize(event)" style="cursor:pointer" ng-if="event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId">
+						<i class="far fa-eye" style="color:#2E9625; font-size: 16px;" title="Visualize"></i>
+					</a>
 					<pre>
 {{ event.linkMetaData }}
 					</pre>

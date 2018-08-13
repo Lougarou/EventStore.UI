@@ -60,7 +60,8 @@ define(['./_module'], function (app) {
 			};
 
 			$scope.visualize = function (event) {
-				$state.go('visualize.eventflow', {correlationId: event.metaDataParsed.$correlationId});
+				var correlationId = (event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId)?event.linkMetaDataParsed.$correlationId:event.metaDataParsed.$correlationId;
+				$state.go('visualize.eventflow', {correlationId: correlationId});
 			};
 
 			function deleteStream(streamId){

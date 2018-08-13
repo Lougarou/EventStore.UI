@@ -11,7 +11,8 @@ define(['./_module'], function (app) {
 			$scope.eventNumber = $scope.isMetadata ? 'metadata' : $stateParams.eventNumber;
 
 			$scope.visualize = function (event) {
-				$state.go('visualize.eventflow', {correlationId: event.metaDataParsed.$correlationId});
+				var correlationId = (event.linkMetaDataParsed && event.linkMetaDataParsed.$correlationId)?event.linkMetaDataParsed.$correlationId:event.metaDataParsed.$correlationId;
+				$state.go('visualize.eventflow', {correlationId: correlationId});
 			};
 
 			streamsService.eventContent($scope.streamId, $scope.eventNumber)
@@ -19,13 +20,21 @@ define(['./_module'], function (app) {
 				$scope.evt = data;
 				$scope.isNotTheSame = data.positionStreamId !== data.streamId || data.positionEventNumber !== data.eventNumber;
 				$scope.links = data.links;
-
 				if($scope.evt.metaData){
 					try{
 						$scope.evt.metaDataParsed = JSON.parse($scope.evt.metaData);
 					}
 					catch(err){
 						$scope.evt.metaDataParsed = null;
+					}
+				}
+
+				if($scope.evt.linkMetaData){
+					try{
+						$scope.evt.linkMetaDataParsed = JSON.parse($scope.evt.linkMetaData);
+					}
+					catch(err){
+						$scope.evt.linkMetaDataParsed = null;
 					}
 				}
 
