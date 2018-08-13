@@ -5,8 +5,7 @@ define(['./_module'], function (app) {
 	return app.provider('VisualizeService', function () {
 
 		this.$get = [
-			'$http', 'urls', 'UrlBuilder',
-			function ($http, urls, urlBuilder) {
+			function () {
 				return {
 				};
 			}
